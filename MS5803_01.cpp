@@ -155,7 +155,7 @@ void MS_5803::readSensor() {
 		D1 = MS_5803_ADC(CMD_ADC_D1 + CMD_ADC_4096); // read raw pressure
 		D2 = MS_5803_ADC(CMD_ADC_D2 + CMD_ADC_4096); // read raw temperature
 	}
-    // Calculate 1st order temperature, dT is a long integer
+    // Calculate 1st order temperature, dT is a long signed integer
 	// D2 is originally cast as an uint32_t, but can fit in a int32_t, so we'll
 	// cast both parts of the equation below as signed values so that we can
 	// get a negative answer if needed
@@ -177,7 +177,7 @@ void MS_5803::readSensor() {
     // (i.e. 2^31 is hard coded as 2147483648).
     if (TEMP < 2000) {
 		// For 1 bar model
-		T2 = ((uint64_t)dT * dT) / 2147483648 ; // 2^31 = 2147483648
+		T2 = ((int64_t)dT * dT) / 2147483648ULL ; // 2^31 = 2147483648
 		T2 = (int32_t)T2; // recast as signed 32bit integer
 		OFF2 = 3 * ((TEMP-2000) * (TEMP-2000));
 		Sens2 = 7 * ((TEMP-2000)*(TEMP-2000)) / 8 ;
@@ -191,7 +191,7 @@ void MS_5803::readSensor() {
 			Sens2 = Sens2 - ((TEMP-4500)*(TEMP-4500)) / 8;
 		}
     }
-    
+
     // Additional compensation for very low temperatures (< -15C)
     if (TEMP < -1500) {
 		// For 1 bar model
