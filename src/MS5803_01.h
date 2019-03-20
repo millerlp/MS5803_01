@@ -3,9 +3,9 @@
  * 	of pressure sensors. This library uses I2C to communicate with the
  * 	MS5803 using the Wire library from Arduino.
  *	
- *	This library only works with the MS5803-14BA model sensor. It DOES NOT
+ *	This library only works with the MS5803-01BA model sensor. It DOES NOT
  *	work with the other pressure-range models such as the MS5803-30BA or
- *	MS5803-01BA. Those models will return incorrect pressure and temperature 
+ *	MS5803-14BA. Those models will return incorrect pressure and temperature 
  *	readings if used with this library. See http://github.com/millerlp for
  *	libraries for the other models. 
  *	 
@@ -22,6 +22,8 @@
  * 	redistribution.
  * 	
  * 	Copyright Luke Miller, April 1 2014
+ *	Changed by Dale DeJager to support multiple sensors
+ *	on March 17, 2019
  */
 
 
@@ -35,7 +37,8 @@ public:
 	// Constructor for the class. 
 	// The argument is the desired oversampling resolution, which has 
 	// values of 256, 512, 1024, 2048, 4096
-    MS_5803(uint16_t Resolution = 512);
+	// Second argument is the I2C address of the unit: either 0x76 or 0x77
+    MS_5803(uint16_t Resolution = 512, uint8_t address = 0x76);
     // Initialize the sensor 
     boolean initializeMS_5803(boolean Verbose = true);
     // Reset the sensor
@@ -83,6 +86,8 @@ private:
     unsigned long MS_5803_ADC(char commandADC);
     // Oversampling resolution
     uint16_t _Resolution;
+    unsigned int sensorCoeffs[8]; //Coefficients
+    uint8_t _address; // I2C Address
 };
 
 #endif 

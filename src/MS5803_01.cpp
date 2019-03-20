@@ -22,6 +22,8 @@
  * 	redistribution.
  *
  * 	Copyright Luke Miller, April 1 2014
+ *	Modified to support multiple sensors by Dale DeJager
+ *	on March 17, 2019
  */
 
 #include "MS5803_01.h"
@@ -29,7 +31,7 @@
 
 // For I2C, set the CSB Pin (pin 3) high for address 0x76, and pull low
 // for address 0x77. If you use 0x77, change the value on the line below:
-#define MS5803_I2C_ADDRESS    0x76 // or 0x77
+//#define MS5803_I2C_ADDRESS    0x76 // or 0x77
 
 #define CMD_RESET		0x1E	// ADC reset command
 #define CMD_ADC_READ	0x00	// ADC read command
@@ -44,7 +46,7 @@
 
 
 // Create array to hold the 8 sensor calibration coefficients
-static unsigned int      sensorCoeffs[8]; // unsigned 16-bit integer (0-65535)
+//static unsigned int      sensorCoeffs[8]; // unsigned 16-bit integer (0-65535)
 // D1 and D2 need to be unsigned 32-bit integers (long 0-4294967295)
 static uint32_t     D1 = 0;    // Store uncompensated pressure value
 static uint32_t     D2 = 0;    // Store uncompensated temperature value
@@ -68,10 +70,11 @@ static byte LowByte;
 
 //-------------------------------------------------
 // Constructor
-MS_5803::MS_5803(uint16_t Resolution) {
+MS_5803::MS_5803(uint16_t Resolution, uint8_t Address) {
 	// The argument is the oversampling resolution, which may have values
 	// of 256, 512, 1024, 2048, or 4096.
 	_Resolution = Resolution;
+	_address = Address;
 }
 
 //-------------------------------------------------
@@ -96,10 +99,10 @@ boolean MS_5803::initializeMS_5803(boolean Verbose) {
 	// Read sensor coefficients
     for (int i = 0; i < 8; i++ ){
     	// The PROM starts at address 0xA0
-    	Wire.beginTransmission(MS5803_I2C_ADDRESS);
+    	Wire.beginTransmission(_address);
     	Wire.write(0xA0 + (i * 2));
     	Wire.endTransmission();
-    	Wire.requestFrom(MS5803_I2C_ADDRESS, 2);
+    	Wire.requestFrom((int)_address, 2);
     	while(Wire.available()) {
     		HighByte = Wire.read();
     		LowByte = Wire.read();
@@ -127,9 +130,9 @@ boolean MS_5803::initializeMS_5803(boolean Verbose) {
 		Serial.print("n_crc: ");
 		Serial.println(n_crc);
     }
-    // If the CRC value doesn't match the sensor's CRC value, then the
+    // If the CRC value doesn't match the sensor's CRC value or if the coeffs are zero, then the
     // connection can't be trusted. Check your wiring.
-    if (p_crc != n_crc) {
+    if (p_crc != n_crc || (sensorCoeffs[0] == 0 && sensorCoeffs[1] == 0)) {
         return false;
     }
     // Otherwise, return true when everything checks out OK.
@@ -285,7 +288,7 @@ unsigned long MS_5803::MS_5803_ADC(char commandADC) {
 	// a long integer on 8-bit Arduinos.
     long result = 0;
     // Send the command to do the ADC conversion on the chip
-	Wire.beginTransmission(MS5803_I2C_ADDRESS);
+	Wire.beginTransmission(_address);
     Wire.write(CMD_ADC_CONV + commandADC);
     Wire.endTransmission();
     // Wait a specified period of time for the ADC conversion to happen
@@ -310,11 +313,11 @@ unsigned long MS_5803::MS_5803_ADC(char commandADC) {
             break;
     }
     // Now send the read command to the MS5803
-    Wire.beginTransmission(MS5803_I2C_ADDRESS);
+    Wire.beginTransmission(_address);
     Wire.write((byte)CMD_ADC_READ);
     Wire.endTransmission();
     // Then request the results. This should be a 24-bit result (3 bytes)
-    Wire.requestFrom(MS5803_I2C_ADDRESS, 3);
+    Wire.requestFrom((int)_address, 3);
     while(Wire.available()) {
     	HighByte = Wire.read();
     	MidByte = Wire.read();
@@ -328,7 +331,7 @@ unsigned long MS_5803::MS_5803_ADC(char commandADC) {
 //----------------------------------------------------------------
 // Sends a power on reset command to the sensor.
 void MS_5803::resetSensor() {
-    	Wire.beginTransmission(MS5803_I2C_ADDRESS);
+    	Wire.beginTransmission(_address);
         Wire.write(CMD_RESET);
         Wire.endTransmission();
     	delay(10);
