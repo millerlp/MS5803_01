@@ -28,14 +28,16 @@ The start of your Arduino sketch must include the lines:
 #include <Wire.h>
 #include "MS5803_01.h"
 
-MS_5803 sensor = MS_5803(512);
+MS_5803 sensor = MS_5803(Resolution = 512, address = 0x76);
 
 ```
 
-to use this library. The function MS_5803() takes one argument for the oversampling range. Available
+to use this library. The function MS_5803() takes an argument for the oversampling range. Available
 values are 256, 512, 1024, 2048, and 4096. The default is 512 if you do not enter a 
 value manually. Larger values include longer delays to allow the sensor to complete
 a sample. 
+The function MS_5803() also takes an argument to set the I2C address of the device (either 0x76 or 0x77 depending on how you physically
+wire the CSB pin (pin 3, the longest pad on the bottom of the chip; wired high to VDD gives 0x76, wired low to ground gives 0x77).
 
 In the setup loop, initialize the sensor as follows:
 ```
